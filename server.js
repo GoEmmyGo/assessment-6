@@ -1,36 +1,49 @@
 const express = require('express')
-const cors = require('cors')
+// const cors = require('cors')
 const path = require('path')
 const app = express()
 const {bots, playerRecord} = require('./data')
 const {shuffleArray} = require('./utils')
 
-app.use(express.json())
-app.use(cors())
 
-const port = process.env.PORT || 3000
-
-app.listen(port, () => {
-  console.log(`Listening on port ${port}`)
+// include and initialize the rollbar library with your access token
+var Rollbar = require('rollbar')
+var rollbar = new Rollbar({
+  accessToken: '53eedbc9f43a40fc8e4474f17bc8242f',
+  captureUncaught: true,
+  captureUnhandledRejections: true,
 })
+
+// record a generic message and send it to Rollbar
+rollbar.log('Hello world!')
+
+app.use(express.json())
+// app.use(cors())
+
+app.use('/static', express.static(path.join(__dirname, 'public')))
+
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'))
+    res.sendFile(path.join(__dirname, '/public/index.html'))
+    rollbar.info('html ready to roll')
 })
 
-app.get('/js', (req, res) => {
-    res.sendFile(path.join(__dirname, '../assessment-qa-devops/public/index.js'))
-})
+//this goes and gets the html file which is kind of like a gate to our front end, and we're setting up an endpoint that will serve that html file so that we can serve up the front end and the backend through a single server right here
 
-app.get('/css', (req, res) => {
-    res.sendFile(path.join(__dirname, '../assessment-qa-devops/public/index.css'))
-})
+// app.get('/js', (req, res) => {
+//     res.sendFile(path.join(__dirname, '/public/index.js'))
+// })
+
+// app.get('/styles', (req, res) => {
+//     res.sendFile(path.join(__dirname, '/public/index.css'))
+// })
 
 app.get('/api/robots', (req, res) => {
     try {
-        res.status(200).send(botsArr)
+        res.status(200).send(bots)
     } catch (error) {
         console.log('ERROR GETTING BOTS', error)
+        rollbar.error('Where in the world are the bots?!')
         res.sendStatus(400)
     }
 })
@@ -43,6 +56,7 @@ app.get('/api/robots/five', (req, res) => {
         res.status(200).send({choices, compDuo})
     } catch (error) {
         console.log('ERROR GETTING FIVE BOTS', error)
+        rollbar.warning('I demand FIVE bots')
         res.sendStatus(400)
     }
 })
@@ -83,7 +97,14 @@ app.get('/api/player', (req, res) => {
         res.status(200).send(playerRecord)
     } catch (error) {
         console.log('ERROR GETTING PLAYER STATS', error)
+        rollbar.critical('Who lost the player stats again???')
         res.sendStatus(400)
     }
+})
+
+const port = process.env.PORT || 3000
+
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`)
 })
 
